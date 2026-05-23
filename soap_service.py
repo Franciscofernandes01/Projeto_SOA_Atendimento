@@ -15,7 +15,7 @@ solicitacoes_db = {
     2: {"usuario": "maria", "descricao": "Erro ao emitir boleto", "status": "Em andamento"}
 }
 
-class AtendimentoService(ServiceBase):
+class AtendimentoService(ServiceBase): # Define o serviço SOAP com os métodos de atendimento
     @rpc(Unicode, Unicode, _returns=Unicode)
     def registrar_solicitacao(ctx, usuario, descricao):
         """Registra uma nova solicitação de atendimento."""
@@ -28,7 +28,7 @@ class AtendimentoService(ServiceBase):
         return f"Solicitação {new_id} registrada com sucesso para o usuário {usuario}."
 
     @rpc(Integer, _returns=Unicode)
-    def consultar_status(ctx, id_solicitacao):
+    def consultar_status(ctx, id_solicitacao): # consulta o status de uma solicitação pelo ID
         """Consulta o status de uma solicitação pelo ID."""
         solicitacao = solicitacoes_db.get(id_solicitacao)
         if solicitacao:
@@ -36,7 +36,7 @@ class AtendimentoService(ServiceBase):
         return f"Solicitação {id_solicitacao} não encontrada."
 
     @rpc(Unicode, _returns=Array(Unicode))
-    def listar_atendimentos(ctx, usuario):
+    def listar_atendimentos(ctx, usuario): # lista as descrições de todos os atendimentos de um usuário
         """Lista as descrições de todos os atendimentos de um usuário."""
         atendimentos = [
             f"ID {id}: {info['descricao']} ({info['status']})"
@@ -48,7 +48,7 @@ class AtendimentoService(ServiceBase):
         return atendimentos
 
 application = Application(
-    [AtendimentoService],
+    [AtendimentoService], # Define o namespace do serviço SOAP
     tns='http://uern.br/atendimento',
     in_protocol=Soap11(validator='soft'),
     out_protocol=Soap11()
