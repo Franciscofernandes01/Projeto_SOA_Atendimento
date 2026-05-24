@@ -1,16 +1,36 @@
-# Ambientes virtuais Python
-venv/
-.venv/
+# ==============================================================================
+# Gitignore Customizado: Projeto_SOA_Atendimento
+# ==============================================================================
 
-# Arquivos de cache e temporários
+# 1. Ambientes Virtuais (REQUISITO CRÍTICO)
+# Impede que a pasta de bibliotecas do Python seja enviada
+.venv/
+venv/
+ENV/
+env/
+
+# 2. Arquivos de Log e Monitoramento (Requisito 4.5)
+# Impede que os logs gerados nos seus testes locais subam para o Git
+*.log
+servidor_soap.log
+
+# 3. Caches do Python
+# Arquivos compilados pelo interpretador Python 3.10 (__pycache__)
 __pycache__/
 *.pyc
-*.log
-*.sqlite3
+*.pyo
+*.pyd
+.pytest_cache/
 
-# Arquivos específicos do VS Code
+# 4. Configurações de Editores e IDEs (VS Code)
 .vscode/
+*.code-workspace
 
-# Arquivos de sistema operacional
-.DS_Store
+# 5. Arquivos Temporários do Sistema Operacional
 Thumbs.db
+Desktop.ini
+.DS_Store
+
+# 6. Arquivos de Bancos de Dados Locais (se houver algum dump ou sqlite)
+*.sqlite3
+*.sql
