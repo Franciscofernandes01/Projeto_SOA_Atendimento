@@ -1,94 +1,142 @@
-# Relatório de Atividade: Programação Orientada a Serviços (UERN)
+# Memorial Descritivo de Arquitetura: Serviço de Atendimento SOAP
 
-Este documento apresenta a modelagem e implementação de um sistema orientado a serviços (SOA) utilizando Web Services SOAP, conforme os requisitos da Unidade 1 da disciplina.
+Este repositório hospeda a implementação de um Sistema de Atendimento Corporativo baseado nos padrões de **Arquitetura Orientada a Serviços (SOA)**, utilizando o protocolo **SOAP (Simple Object Access Protocol)**. O projeto atua como um barramento de serviços robusto, integrando persistência relacional, segurança em nível de mensagem e auditoria automatizada.
 
-## 1. Estudo de Caso
+---
 
-O sistema escolhido para este trabalho é um **Sistema de Atendimento e Solicitações**. O objetivo é permitir que usuários registrem problemas ou solicitações, consultem o status de seus chamados e listem todos os seus atendimentos vinculados.
+## 🏛️ 1. Decisões de Engenharia e Infraestrutura
 
-| Ator | Papel no Sistema |
-| :--- | :--- |
-| **Usuário** | Registra novas solicitações e consulta o andamento de seus atendimentos. |
-| **Sistema de Atendimento** | Web Service SOAP que processa as requisições e gerencia os dados das solicitações. |
+### ⚠️ Justificativa de Arquitetura: Downgrade Estratégico do Interpretador (Python 3.10)
+Diferente do ecossistema REST/JSON moderno, o protocolo SOAP corporativo em Python baseia-se em engines maduras de parsing e serialização, especificamente o framework **Spyne** e o motor analítico **lxml** (escrito em C). 
 
-## 2. Modelagem do Sistema
+Durante a fase de design de infraestrutura, identificou-se que as versões mais recentes do interpretador Python (3.11, 3.12 e superiores) apresentam quebras de retrocompatibilidade de binários na compilação do `lxml` em ambiente Windows, resultando em falhas críticas de Linkagem Dinâmica (DLLs) e corrupção de memória. 
 
-A arquitetura segue o padrão SOA, onde o serviço é exposto via protocolo HTTP utilizando mensagens XML formatadas conforme o padrão SOAP 1.1.
+A equipe de desenvolvimento adotou o **downgrade estratégico para o Python 3.10**. Esta decisão de engenharia garantiu:
+1. **Estabilidade Absoluta:** Geração dinâmica resiliente do contrato formal WSDL sem estouro de pilha.
+2. **Conformidade de Esquema:** Validação rigorosa de tipos complexos no XML Schema (XSD).
+3. **Determinismo na Instalação:** Compilação limpa de pacotes nativos diretamente pelo gerenciador de pacotes (`pip`).
 
-### Serviços e Operações
+### 📦 Isolamento de Escopo Local (.venv)
+Para mitigar o problema global conhecido como *"Dependency Hell"* (conflitos de versões de bibliotecas globais no sistema operacional), o projeto adota um **Ambiente Virtual Isolado (`.venv`)**. Toda a árvore de dependências, interpretadores locais e scripts de ativação e segurança da aplicação ficam encapsulados neste diretório, garantindo a portabilidade estrita do ecossistema.
 
-O serviço de atendimento expõe as seguintes operações lógicas:
+---
 
-1.  **registrar_solicitacao**: Recebe o nome do usuário e a descrição do problema, retornando uma confirmação com o ID gerado.
-2.  **consultar_status**: Recebe o ID de uma solicitação e retorna o status atual (ex: Pendente, Em andamento).
-3.  **listar_atendimentos**: Recebe o nome do usuário e retorna uma lista de todas as suas solicitações registradas.
+## 📂 2. Árvore de Diretórios do Ecossistema
 
-## 3. Especificação do Contrato (WSDL)
+O projeto foi desacoplado seguindo o princípio de separação de conceitos (*Separation of Concerns*):
 
-O contrato do serviço define os tipos de dados, as mensagens e os endpoints. Abaixo, destaca-se a estrutura principal do WSDL gerado automaticamente pelo framework Spyne.
+```text
+Projeto_SOA_Atendimento/
+│
+├── database/
+│   ├── __init__.py
+│   ├── connection.py####### Camada de Conexão: Engine SQLAlchemy e gerenciador SessionLocal
+│   └── models.py########### Camada de Modelo: Mapeamento ORM da tabela 'solicitacoes' (MySQL)
+│
+├── client/
+│   └── soap_client.py###### Script cliente automatizado para testes rápidos de integração
+│
+├── .gitignore############## Filtro de segurança: Impede vazamento de logs e binários locais (.venv)
+├── README.md############### Documentação técnica institucional (Este arquivo)
+├── servidor_soap.log####### Sistema de Auditoria: Logs persistidos em tempo real
+└── soap_service.py######### Core Application: Servidor SOAP, Endpoints CRUD e Middleware de Segurança
 
-> O WSDL completo pode ser acessado na URL do serviço em execução (`/?wsdl`).
+🚀 3. Manual de Deploy Local e Inicialização
+Siga rigorosamente as instruções abaixo para instanciar o ambiente e inicializar o servidor de barramento.
 
-### Trecho do Contrato (Tipos e Mensagens)
+Passo 1: Posicionamento no Diretório Raiz
+Abra o terminal do seu ambiente de desenvolvimento (PowerShell preferencialmente) e navegue até a raiz do projeto:
 
-```xml
-<wsdl:message name="registrar_solicitacao">
-    <wsdl:part name="registrar_solicitacao" element="tns:registrar_solicitacao"/>
-</wsdl:message>
-<wsdl:portType name="Application">
-    <wsdl:operation name="registrar_solicitacao">
-        <wsdl:input message="tns:registrar_solicitacao"/>
-        <wsdl:output message="tns:registrar_solicitacaoResponse"/>
-    </wsdl:operation>
-</wsdl:portType>
-```
+PowerShell
+cd C:\Users\franc\OneDrive\Documentos\MeuProjetos\Projeto_SOA_Atendimento
+Passo 2: Reconstrução e Saneamento do Ambiente Virtual
+Caso seu ambiente virtual (.venv) esteja ausente, corrompido ou com a pasta Scripts vazia devido a divergências de sincronismo de branches do Git, limpe o resíduo e recrie a estrutura do zero executando:
 
-## 4. Exemplos de Mensagens SOAP
+PowerShell
+# Remove resquícios corrompidos de forma forçada se necessário
+Remove-Item -Recurse -Force .venv -ErrorAction SilentlyContinue
 
-Abaixo estão exemplos reais de requisições e respostas capturadas durante os testes do serviço.
+# Instancia uma nova estrutura limpa isolada com Python 3.10
+python -m venv .venv
+Passo 3: Ativação do Escopo de Contexto (.venv)
+Selecione o comando adequado com base no interpretador de linha de comando utilizado no seu terminal:
 
-### Registrar Solicitação (Request)
-```xml
-<soap11env:Envelope xmlns:soap11env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tns="http://uern.br/atendimento">
-    <soap11env:Body>
-        <tns:registrar_solicitacao>
-            <tns:usuario>carlos</tns:usuario>
-            <tns:descricao>Troca de senha</tns:descricao>
-        </tns:registrar_solicitacao>
-    </soap11env:Body>
-</soap11env:Envelope>
-```
+No Windows (PowerShell - Padrão do VS Code):
 
-### Registrar Solicitação (Response)
-```xml
-<soap11env:Envelope xmlns:soap11env="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tns="http://uern.br/atendimento">
-    <soap11env:Body>
-        <tns:registrar_solicitacaoResponse>
-            <tns:registrar_solicitacaoResult>Solicitação 3 registrada com sucesso para o usuário carlos.</tns:registrar_solicitacaoResult>
-        </tns:registrar_solicitacaoResponse>
-    </soap11env:Body>
-</soap11env:Envelope>
-```
+PowerShell
+.\.venv\Scripts\Activate.ps1
+Nota de Contingência: Caso o Windows bloqueie a execução por diretivas restritivas de execução da máquina, contorne via:
 
-## 5. Testes Realizados
+PowerShell
+powershell -ExecutionPolicy Bypass -File .\.venv\Scripts\Activate.ps1
+No Windows (Prompt de Comando - CMD Tradicional):
 
-Os testes foram conduzidos utilizando um script cliente em Python que realiza chamadas HTTP POST enviando envelopes SOAP para o endpoint `http://localhost:8000/`.
+DOS
+.venv\Scripts\activate.bat
+🔍 Indicador de Sucesso: A linha de comando do seu terminal deve obrigatoriamente exibir o prefixo (.venv) antes do caminho do diretório.
 
-1.  **Teste de Registro**: Validou-se que o sistema incrementa o ID corretamente e armazena os dados.
-2.  **Teste de Consulta**: Verificou-se que o status retornado condiz com o ID solicitado.
-3.  **Teste de Listagem**: Confirmou-se que o retorno é um array de strings contendo os detalhes dos atendimentos do usuário.
+Passo 4: Instalação Descritiva de Dependências
+Com o contexto (.venv) devidamente ativo, realize a ingestão dos pacotes necessários:
 
-## 6. Instruções de Execução
+PowerShell
+pip install spyne sqlalchemy pymysql cryptography werkzeug lxml zeep
+Passo 5: Inicialização do Servidor de Barramento
+Execute o script principal:
 
-### Requisitos de Ambiente
-- Python 3.8 ou superior.
-- Bibliotecas: `spyne`, `werkzeug`, `requests`.
+PowerShell
+python soap_service.py
+O framework SQLAlchemy invocará o banco de dados MySQL (soa_atendimento), validará a integridade estrutural e criará de forma transparente a tabela caso ela não exista. O servidor passará a escutar requisições de forma síncrona na porta 8000.
 
-### Passos para Executar
-1. Instale as dependências: `pip install spyne werkzeug`.
-2. Execute o servidor: `python soap_service.py`.
-3. O serviço estará disponível em `http://localhost:8000/`.
-4. O WSDL pode ser visualizado em `http://localhost:8000/?wsdl`.
+📝 4. Rastreabilidade de Requisitos de Negócio (Checklist Acadêmico)
+4.1 Implementação do Serviço SOAP (Requisito 4.1)
+Contrato Formal: O contrato WSDL é gerado dinamicamente em tempo de execução e exposto na URL: http://localhost:8000/?wsdl
 
-### Passos para Consumir
-- Utilize o script `soap_client.py` fornecido ou qualquer ferramenta de teste SOAP (como SoapUI ou Postman).
+Definição de Tipos (XSD): Dados fortemente tipados mapeados no XML Schema via estruturas complexas do Spyne (SolicitacaoModel), utilizando tipos primitivos como Integer e Unicode.
+
+Persistência Relacional (CRUD Completo): Integração via ORM mapeando as 4 operações de ciclo de vida do dado:
+
+criar_solicitacao (Create) -> Insere novos registros com status padrão "Pendente".
+
+consultar_solicitacao (Read) -> Captura e serializa dados filtrados por ID.
+
+atualizar_status (Update) -> Altera o estado do ciclo do chamado no MySQL.
+
+deletar_solicitacao (Delete) -> Remove fisicamente o registro da base de dados.
+
+4.2 Documentação do Serviço (Requisito 4.2)
+O serviço encontra-se auto-documentado através de metadados nativos expostos na especificação técnica do WSDL. Ferramentas de mercado como o SoapUI são capazes de interpretar o link e gerar automaticamente toda a estrutura visual de payloads suportados pelo barramento.
+
+4.3 Segurança de Mensagem - WS-Security (Requisito 4.3)
+Injeção de SOAP Headers: O barramento não aceita chamadas anônimas. Toda requisição precisa conter obrigatoriamente no envelope XML o bloco <soapenv:Header> encapsulando o objeto complexo AuthHeader (composto pelas chaves <username> e <password>).
+
+Interceptação e Validação: Um validador intercepta as requisições antes de chegarem à camada de banco de dados. Credenciais inválidas (diferentes de admin / Root@123456) abortam a execução imediatamente, devolvendo ao chamador uma mensagem de erro padronizada no elemento <soap:Fault>.
+
+4.4 Massa de Testes e Evidências (Requisito 4.4)
+O barramento está homologado para testes nas principais ferramentas de API do mercado:
+
+SoapUI / Postman: Permite validar cenários de sucesso (persistência de dados confirmada na tabela do MySQL) e cenários de falha (injeção de credenciais incorretas simulando tentativas de invasão, retornando erro HTTP 500 controlado).
+
+4.5 Mecanismos de Logs e Auditoria (Requisito 4.5)
+O ecossistema implementa gravação em modo contínuo usando o módulo nativo logging do Python.
+
+Todas as interações críticas do sistema (inicialização de tabelas, chamadas do CRUD de sucesso, deleções e, crucialmente, erros de autenticação barrados) são registradas cronologicamente com carimbo de data/hora no arquivo físico servidor_soap.log, servindo como evidência de auditoria exigida para o relatório.
+
+✉️ 5. Template de Payload XML para Validação (Postman / SoapUI)
+Para disparar requisições manuais ao servidor, configure o método como POST, aponte para http://localhost:8000/, inclua o cabeçalho HTTP Content-Type: text/xml; charset=utf-8 e injete o seguinte envelope XML:
+
+XML
+<soapenv:Envelope xmlns:soapenv="[http://schemas.xmlsoap.org/soap/envelope/](http://schemas.xmlsoap.org/soap/envelope/)"
+                  xmlns:aten="spyne.examples.atendimento">
+   <soapenv:Header>
+      <aten:AuthHeader>
+         <aten:username>admin</aten:username>
+         <aten:password>Root@123456</aten:password>
+      </aten:AuthHeader>
+   </soapenv:Header>
+   <soapenv:Body>
+      <aten:criar_solicitacao>
+         <aten:usuario>Francisco Fernandes - DevSenior</aten:usuario>
+         <aten:descricao>Teste homologado de barramento arquitetural SOA.</aten:descricao>
+      </aten:criar_solicitacao>
+   </soapenv:Body>
+</soapenv:Envelope>
