@@ -1,4 +1,3 @@
-# Arquivo: database/models.py
 from sqlalchemy import Column, Integer, Unicode, String
 from .connection import Base, engine
 

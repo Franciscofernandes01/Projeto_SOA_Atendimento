@@ -1,7 +1,3 @@
-# ==============================================================================
-# Arquivo: soap_service.py (Versão Completa, Segura e com Logs)
-# ==============================================================================
-
 import logging
 import os
 
@@ -28,9 +24,7 @@ from werkzeug.serving import run_simple
 from database.connection import SessionLocal
 from database.models import SolicitacaoDB
 
-# ------------------------------------------------------------------------------
 # 1. DEFINIÇÃO DA SEGURANÇA (Requisito 4.3 - WS-Security Headers)
-# ------------------------------------------------------------------------------
 class AuthHeader(ComplexModel):
     """Estrutura do cabeçalho SOAP para autenticação."""
     __namespace__ = 'spyne.examples.atendimento'
@@ -63,9 +57,7 @@ def validar_autenticacao(ctx):
     
     logger.info(f"Usuario '{header.username}' autenticado com sucesso.")
 
-# ------------------------------------------------------------------------------
 # 2. DEFINIÇÃO DOS MODELOS DE RETORNO (XSD automático)
-# ------------------------------------------------------------------------------
 class SolicitacaoModel(ComplexModel):
     """Modelo de dados para expor no XML Schema (XSD)"""
     __namespace__ = 'spyne.examples.atendimento'
@@ -74,9 +66,7 @@ class SolicitacaoModel(ComplexModel):
     descricao = Unicode
     status = Unicode
 
-# ------------------------------------------------------------------------------
 # 3. IMPLEMENTAÇÃO DO SERVIÇO COM CRUD E PROTEÇÃO (Requisitos 4.1, 4.3 e 4.5)
-# ------------------------------------------------------------------------------
 class AtendimentoService(ServiceBase):
     
     # Vincula o Header de segurança para ser exigido no WSDL deste serviço
@@ -185,9 +175,8 @@ class AtendimentoService(ServiceBase):
         finally:
             db.close()
 
-# ------------------------------------------------------------------------------
+
 # 4. CONFIGURAÇÃO DA APLICACÃO E DO SERVIDOR WSGI
-# ------------------------------------------------------------------------------
 application = Application(
     [AtendimentoService],
     tns='spyne.examples.atendimento',

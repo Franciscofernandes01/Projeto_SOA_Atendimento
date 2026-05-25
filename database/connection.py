@@ -1,9 +1,7 @@
-# Arquivo: database/connection.py
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-# SUBISTITUA COM SUAS CREDENCIAIS DO MYSQL
 # Formato: mysql+mysqlconnector://[usuario]:[senha]@[host]/[nome_do_banco]
 # Note que trocamos o "@" de dentro da senha por "%40"
 DATABASE_URL = "mysql+mysqlconnector://root:Root%40123456@localhost:3306/soa_atendimento"
